@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>三板独立控制 · ESP32</title>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>水泵反向控制 · 临时测试版</title>
 <style>
 :root{color-scheme:dark;--bg:#10181b;--card:#1b272b;--line:#34454b;--text:#edf5f1;--muted:#aabeb8;--accent:#a5edbd;--red:#ff9990}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Microsoft YaHei",sans-serif}main{max-width:1120px;margin:auto;padding:42px 24px}header{display:flex;align-items:center;justify-content:space-between;gap:20px}h1{font-size:30px;margin:5px 0}h2{font-size:22px;margin:6px 0 20px}p{color:var(--muted);margin:8px 0}.eyebrow{font:12px monospace;letter-spacing:2px;color:var(--accent)}.panel,.device{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;margin-top:24px}.fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px}label{display:block;color:var(--muted);font-size:14px}input{width:100%;background:#101a1e;border:1px solid #4a5d62;border-radius:9px;padding:12px;color:white;font:inherit;margin-top:6px}input:focus{outline:2px solid var(--accent)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}button{border:1px solid var(--line);border-radius:10px;background:#304047;color:white;padding:12px 20px;font:600 16px system-ui;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none}button:hover{filter:brightness(1.12)}button:focus-visible{outline:3px solid #fff}button:disabled{opacity:.38;cursor:not-allowed}.primary{background:var(--accent);color:#173225}.danger{background:#55302d;color:#ffd2cd;border-color:#82504b}.devices{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.device{margin-top:20px;padding:22px}.device .row{display:grid;grid-template-columns:1fr 1fr}.device .stop{grid-column:1/-1}.status{font-size:15px;color:var(--muted)}.status.live{color:var(--accent)}.status.lost{color:var(--red)}.state{font-size:30px;margin:16px 0 0}.details{font-size:13px;min-height:75px;overflow-wrap:anywhere}.tag{font:12px monospace;color:var(--muted)}.notice{padding:14px 18px;border-left:3px solid #c8b778;background:#292c26;font-size:14px;margin-top:24px;color:#e3dcc1}#log{white-space:pre-wrap;overflow:auto;max-height:200px;font:13px/1.7 monospace;color:var(--muted)}small{font-size:13px;color:var(--muted)}@media(max-width:850px){.devices,.fields{grid-template-columns:1fr}header{display:block}.details{min-height:0}main{padding:24px 16px}}
 </style></head><body><main>
-<header><div><div class="eyebrow">ESP32 / HIVEMQ CLOUD</div><h1>三板独立控制</h1><p>水泵与两根推杆，各自运行，各自停止。</p></div><span id="connection" role="status" class="status">未连接</span></header>
-<section class="panel"><h2>连接你的 HiveMQ Cloud</h2><div class="fields"><label>集群 Host<input id="host" placeholder="xxxxxxxx.s1.eu.hivemq.cloud" autocomplete="off" spellcheck="false"></label><label>MQTT 用户名<input id="username" autocomplete="off"></label><label>MQTT 密码<input id="password" type="password" autocomplete="off"></label><label>Topic 根路径<input id="root" value="myrig/v1" spellcheck="false"></label></div><div class="row"><button id="connect" class="primary">连接 WSS :8884</button><button id="disconnect" disabled>停止并断开</button><small>路径 /mqtt · 密码只保留于当前页面内存 · 不自动恢复运动</small></div><p id="message" role="status">直接填写主机名，无需输入 https:// 或端口。</p></section>
-<div class="notice">推杆：按住上/下运行，松开停止（键盘：聚焦按钮后按空格或回车）。水泵：点击开启，保持页面在前台。切换页面、失去焦点或失联会停止续租。网络停止可能延迟；现场必须设置硬件急停。</div>
+<header><div><div class="eyebrow">ESP32 / HIVEMQ CLOUD</div><h1>三板独立控制 · 水泵反向测试</h1><p>仅网页反转水泵；推杆控制保持原样。</p></div><span id="connection" role="status" class="status">未连接</span></header>
+<section class="panel"><h2>连接你的 HiveMQ Cloud</h2><div class="fields"><label>集群 Host<input id="host" placeholder="xxxxxxxx.s1.eu.hivemq.cloud" autocomplete="off" spellcheck="false"></label><label>MQTT 用户名<input id="username" autocomplete="off"></label><label>MQTT 密码<input id="password" type="password" autocomplete="off"></label><label>Topic 根路径<input id="root" value="myrig/v1" spellcheck="false"></label></div><div class="row"><button id="connect" class="primary">连接 WSS :8884</button><button id="disconnect" disabled>断开连接（泵可能开启）</button><small>路径 /mqtt · 密码只保留于当前页面内存 · 不自动恢复运动</small></div><p id="message" role="status">直接填写主机名，无需输入 https:// 或端口。</p></section>
+<div class="notice" style="border-color:#ff9990;background:#422824;color:#ffe1d7"><strong>水泵反向临时测试版：只改网页，Arduino 未修改。</strong><br>“开启水泵”发送原 stop；“关闭水泵”发送原 on 并持续续租。因此关闭仅能维持原固件允许的最长60秒；失联、关闭网页、切到后台、页面失去焦点或板卡复位时，泵可能重新开启。本页不能保证断线停泵，请在现场保留独立断电开关，不要无人值守。状态为按当前反向现象推算，未检测水流。<br>推杆仍是按住上/下运行、松开停止，互不影响。</div>
 <section class="devices" id="devices"></section>
-<section class="panel"><h2>连接与操作记录</h2><div id="log" role="log"></div><small>状态为板卡报告的输出命令，没有电流或位置反馈，不能证明电机实际运动。首次连接等待实时心跳，不使用缓存状态启用按钮。</small></section>
+<section class="panel"><h2>连接与操作记录</h2><div id="log" role="log"></div><small>水泵显示按反向关系推算，推杆显示板卡输出命令；没有电流、位置或水流反馈，不能证明负载实际状态。首次连接等待实时心跳，不使用缓存状态启用按钮。</small></section>
 </main>
 <!--
 MQTT.js 5.10.4
@@ -49,6 +49,8 @@ const IDS=['board1','board2','board3'];
 const LABELS={board1:'水泵',board2:'推杆 1',board3:'推杆 2'};
 const REASONS={boot:'上电停止',manual_stop:'手动停止',network_lost:'网络中断',lease_timeout:'续租超时',max_run:'达到最长运行时间',limit_reached:'触发限位',limit_blocked:'限位阻止启动',command:'执行指令'};
 const STATES={stop:'停止',on:'已开启',up:'上行',down:'下行'};
+// 仅显示和按钮映射反向；板卡协议、启动及失联默认电平未改变。
+function displayState(id,value){return id==='board1'?({stop:'预计开启',on:'预计关闭'}[value]||'未知'):(STATES[value]||'未知');}
 let client=null,connected=false,root='',controller='',generation=0;
 const boards=Object.fromEntries(IDS.map(id=>[id,{session:'',seen:0,status:null,seq:0,active:null,availability:'unknown'}]));
 function log(t){const el=$('log');el.textContent=`${new Date().toLocaleTimeString()}  ${t}\n`+el.textContent.slice(0,6000);}
@@ -59,15 +61,15 @@ function render(){
     const b=boards[id],live=fresh(b),s=b.status;
     $(id+'-status').textContent=live?'在线 · 实时状态':connected?(b.availability==='offline'?'板卡离线':'等待心跳 / 状态失联'):'未连接';
     $(id+'-status').className='status '+(live?'live':'lost');
-    $(id+'-state').textContent=live&&s?(STATES[s.state]||'未知'):'状态未知';
-    $(id+'-details').textContent=s?`${REASONS[s.reason]||s.reason}；目标：${STATES[s.target]||s.target}。${id==='board1'?'':s.limitsEnabled?`上限位 ${s.upper?'触发/断线':'正常'} · 下限位 ${s.lower?'触发/断线':'正常'}`:'限位保护未启用'}${s.owner&&s.owner!==controller?' · 其他页面正在控制':''}`:'尚未收到板卡实时回报';
+    $(id+'-state').textContent=live&&s?displayState(id,s.state):'状态未知';
+    $(id+'-details').textContent=s?`${id==='board1'?'板卡原始原因：':''}${REASONS[s.reason]||s.reason}；目标：${displayState(id,s.target)}。${id==='board1'?'仅网页反向；关闭最长60秒，失联可能开启。':s.limitsEnabled?`上限位 ${s.upper?'触发/断线':'正常'} · 下限位 ${s.lower?'触发/断线':'正常'}`:'外接限位检测关闭（内置限位无状态反馈）'}${s.owner&&s.owner!==controller?' · 其他页面正在控制':''}`:'尚未收到板卡实时回报';
     document.querySelectorAll(`[data-board="${id}"][data-action]`).forEach(el=>{el.disabled=!live||(s&&s.owner&&s.owner!==controller);});
     $(id+'-stop').disabled=!connected||!b.session;
   }
 }
 for(const id of IDS){
   const card=document.createElement('article');card.className='device';
-  card.innerHTML=`<div class="tag">${id.toUpperCase()} · GPIO ${id==='board1'?'26':'25 / 26'}</div><h2>${LABELS[id]}</h2><div id="${id}-status" class="status">未连接</div><div id="${id}-state" class="state">状态未知</div><p id="${id}-details" class="details">等待板卡</p><div class="row">${id==='board1'?`<button class="primary" data-board="${id}" data-action="on">开启水泵</button>`:`<button class="primary hold" data-board="${id}" data-action="up">↑ 按住上行</button><button class="hold" data-board="${id}" data-action="down">↓ 按住下行</button>`}<button id="${id}-stop" class="danger stop" data-stop="${id}">${id==='board1'?'关闭水泵':'停止该推杆'}</button></div>`;
+  card.innerHTML=`<div class="tag">${id.toUpperCase()} · GPIO ${id==='board1'?'18':'25 / 26'}</div><h2>${LABELS[id]}</h2><div id="${id}-status" class="status">未连接</div><div id="${id}-state" class="state">状态未知</div><p id="${id}-details" class="details">等待板卡</p><div class="row">${id==='board1'?`<button class="primary" data-board="${id}" data-action="on">关闭水泵（临时）</button>`:`<button class="primary hold" data-board="${id}" data-action="up">↑ 按住上行</button><button class="hold" data-board="${id}" data-action="down">↓ 按住下行</button>`}<button id="${id}-stop" class="danger stop" data-stop="${id}">${id==='board1'?'开启水泵':'停止该推杆'}</button></div>`;
   $('devices').append(card);
 }
 function send(id,action){
@@ -87,11 +89,11 @@ function start(id,action){
   if(b.active?.action===action)return;
   const seq=send(id,action);if(!seq)return;
   b.active={action,seq,since:performance.now(),session:b.session};
-  log(`${LABELS[id]} 请求${STATES[action]}，等待板卡回报`);
+  log(`${LABELS[id]} 请求${displayState(id,action)}，等待板卡回报`);
 }
-function stop(id,why='手动停止'){
+function stop(id,why='手动操作'){
   const b=boards[id];b.active=null;
-  if(send(id,'stop'))log(`${LABELS[id]}：${why}（已发送，确认以板卡状态为准）`);
+  if(send(id,'stop'))log(`${LABELS[id]}：${why}${id==='board1'?'；原stop在本反向模式预计会开启水泵':''}（已发送，确认以实际负载为准）`);
   render();
 }
 function stopAll(why){for(const id of IDS)if(boards[id].active)stop(id,why);}
@@ -149,7 +151,7 @@ $('connect').addEventListener('click',()=>{
     });render();
   });
   c.on('message',(t,p,pkt)=>{if(gen===generation)onMessage(t,p,pkt);});
-  c.on('reconnect',()=>{if(gen===generation)connectionLost('正在重连 · 设备不会自动恢复');});
+  c.on('reconnect',()=>{if(gen===generation)connectionLost('正在重连 · 反向水泵可能开启');});
   c.on('offline',()=>{if(gen===generation)connectionLost('云端连接中断');});
   c.on('close',()=>{if(gen===generation)connectionLost('连接已断开 / 等待重连');});
   c.on('error',err=>{if(gen===generation){$('message').textContent='连接错误：'+err.message+'；检查 Host、密码、权限与网络。';log('MQTT 错误：'+err.message);}});
@@ -159,7 +161,7 @@ $('disconnect').addEventListener('click',()=>{
   stopAll('主动断开');const old=client;client=null;connected=false;++generation;
   if(old)old.end(true);resetBoards();
   for(const id of ['host','username','password','root','connect'])$(id).disabled=false;
-  $('disconnect').disabled=true;$('connection').textContent='已断开，等待板卡停机保护';$('connection').className='status';
+  $('disconnect').disabled=true;$('connection').textContent='已断开 · 反向水泵可能开启，请现场检查';$('connection').className='status';
 });
 document.querySelectorAll('[data-stop]').forEach(btn=>btn.addEventListener('click',()=>stop(btn.dataset.stop)));
 document.querySelector('[data-action="on"]').addEventListener('click',()=>start('board1','on'));
